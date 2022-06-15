@@ -30,6 +30,30 @@ You can install the development version of bepop from [GitHub](https://github.co
 devtools::install_github("sciensanogit/bepop")
 ```
 
+## Population datasets
+
+the `bepop` package contains population files on different geographical levels (municipalities - districts - provinces -  regions - country). The datasets are names as follows:
+
+* *BE_POP_MUNTY*: municipalities
+* *BE_POP_ARRD*: districts
+* *BE_POP_PROV*: provinces (+ Brussels Capital Region for simplicity)
+* *BE_POP_RGN*: regions
+* *BE_POP*: country
+
+for more information on the content of each dataset, you can always consult the help-file by `?BE_POP`. The population structure of Belgium over the years was as follows:
+
+```{r, echo = FALSE}
+data("BE_POP")
+betab <- aggregate(
+  data = subset(BE_POP, subset = SEX == "MF" & AGE == "ALL"),
+  POPULATION ~ YEAR,
+  FUN = sum)
+
+kableExtra::kable(betab)
+```
+
+
+
 ## Data sources
 
 The idea for this package is inspired by the [BelgiumMaps.StatBel package](https://github.com/bnosac/BelgiumMaps.StatBel), developed by Jan Wijffels at [BNOSAC](http://www.bnosac.be/index.php/blog/55-belgiummaps-statbel-r-package-with-administrative-boundaries-of-belgium).
