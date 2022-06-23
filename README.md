@@ -23,7 +23,7 @@ You can install the development version of bepop from
 
 the `bepop` package contains population files on different geographical
 levels (municipalities - districts - provinces - regions - country). The
-datasets are names as follows:
+datasets are named as follows:
 
 -   *BE_POP_MUNTY*: municipalities
 -   *BE_POP_ARRD*: districts

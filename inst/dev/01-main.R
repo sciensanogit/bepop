@@ -14,9 +14,13 @@
 ## load packages
 library(tidyverse)
 library(utils)
+library(openxlsx)
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## BELGIUM DATA STATBEL ####
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-## READ DATA ####
+## .. READ DATA ####
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## read-in and extract data
 ls <-
@@ -174,7 +178,7 @@ dta$RGN_ABBR <- factor(dta$RGN_DESCR_NL,
 
 which(is.na(dta$RGN_ABBR))
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-## AGGREGATE DATA ####
+## .. AGGREGATE DATA ####
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 ## calculate summaries
@@ -227,7 +231,6 @@ munty$AGE5 <- "ALL"
 munty$AGE10 <- "ALL"
 
 BE_POP_MUNTY <- bind_rows(munty, munty_age, munty_age_sex, munty_sex)
-
 
 ## .. ARRD
 arrd_age_sex <- aggregate(
@@ -388,6 +391,170 @@ be$AGE10 <- "ALL"
 BE_POP <- bind_rows(be, be_age, be_age_sex, be_sex)
 
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## PROJECTIONS ####
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## .. READ DATA ####
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## read-in and extract data
+ls <-
+  list.files(path = "inst/extdata/",
+             pattern = ".xlsx",
+             full.names = TRUE)
+dta <- list()
+i <- 1
+
+for (fxlsx in ls) {
+  print(paste0(i, "/", length(ls)))
+  ## read in the data
+  ftmp <- list()
+  ftmp$wd <- openxlsx::loadWorkbook(fxlsx)
+  ftmp$sheets <- openxlsx::sheets(ftmp$wd)[-1]
+  ftmp$dta <- tibble()
+
+  ## loop over different sheets
+  for (sh in seq_along(ftmp$sheets)) {
+    ftmp$xlsx <-
+      openxlsx::read.xlsx(
+        xlsxFile = ftmp$wd,
+        sheet = ftmp$sheets[sh],
+        startRow = 4,
+        colNames = TRUE
+      )
+    ## delete NA rows at column2 and column1
+    id <- is.na(ftmp$xlsx[,2]) | is.na(ftmp$xlsx[,1])
+    ## remove these rows
+    ftmp$xlsx <- ftmp$xlsx[!id,]
+    ## check uniques in age and add sex
+    colnames(ftmp$xlsx)[1] <- "AGE"
+    ftmp$xlsx$AGE <- as.numeric(gsub(pattern = " jaar| jaar en meer", replacement = "", x = ftmp$xlsx$AGE))
+
+    ftmp$xlsx$SEX <- rep(c("MF", "M", "F"), each = length(unique(ftmp$xlsx$AGE)))
+    ## add region
+    ftmp$xlsx$REGION <- ftmp$sheets[sh]
+    ## pivot_longer
+    ftmp$xlsx <- pivot_longer(ftmp$xlsx, cols = c(-SEX, -AGE, -REGION), names_to = "YEAR", values_to = "POPULATION")
+    ## add agegroups
+    ## .. .. 5-year age band
+    age <-
+      c("<1", "1-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34",
+        "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69",
+        "70-74", "75-79", "80-84", "85-89", "90-94", "95+")
+    agei <- c(-Inf, 1, seq(5, 95, 5), Inf)
+    ftmp$xlsx$AGE5 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age)
+    ## .. .. 10-year age band
+    age <-
+      c("<10", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79",
+        "80-89", "90+")
+    agei <- c(-Inf, seq(10, 90, 10), Inf)
+    ftmp$xlsx$AGE10 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age)
+    ## merge dataset
+    ftmp$dta <- bind_rows(ftmp$dta, ftmp$xlsx)
+  }
+
+  ## save dta
+  dta[[i]] <- ftmp$dta
+  ## remove file
+  rm(ftmp)
+  ## add +1
+  i <- i + 1
+}
+
+## check the dta
+str(dta)
+head(dta[[1]])
+head(dta[[2]])
+head(dta[[3]])
+head(dta[[4]])
+
+## translate of non-ASCII characters
+dta[[1]]$REGION <-
+  stringi::stri_trans_general(dta[[1]]$REGION, "latin-ascii")
+dta[[2]]$REGION <-
+  stringi::stri_trans_general(dta[[2]]$REGION, "latin-ascii")
+dta[[3]]$REGION <-
+  stringi::stri_trans_general(dta[[3]]$REGION, "latin-ascii")
+dta[[4]]$REGION <-
+  stringi::stri_trans_general(dta[[4]]$REGION, "latin-ascii")
+
+## add abbrevation for region
+unique(dta[[1]]$REGION)
+unique(dta[[2]]$REGION)
+unique(dta[[3]]$REGION)
+unique(dta[[4]]$REGION)
+
+dta[[4]]$REGION <- factor(dta[[4]]$REGION,
+                       c("Brussels Hoofdstedelijk Gewest",
+                         "Vlaams Gewest",
+                         "Waals Gewest incl. Duitst. Gem."),
+                       c("BR", "FL", "WA"))
+
+dta[[2]]$REGION <- factor(dta[[2]]$REGION,
+                          c("Belgie"),
+                          c("BE"))
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## .. AGGREGATE DATA ####
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+## calculate summaries
+## .. ARRD
+arrd_age <- dta[[1]]
+arrd_age$AGE <- as.character(arrd_age$AGE)
+arrd_sex <- aggregate(
+  data = arrd_age,
+  POPULATION ~ YEAR + REGION + SEX,
+  FUN = sum
+)
+arrd_sex$AGE <- "ALL"
+arrd_sex$AGE5 <- "ALL"
+arrd_sex$AGE10 <- "ALL"
+
+BE_POP_PROJ_ARRD <- bind_rows(arrd_age, arrd_sex)
+
+## .. PROV
+prov_age <- dta[[3]]
+prov_age$AGE <- as.character(prov_age$AGE)
+prov_sex <- aggregate(
+  data = prov_age,
+  POPULATION ~ YEAR + REGION + SEX,
+  FUN = sum
+)
+prov_sex$AGE <- "ALL"
+prov_sex$AGE5 <- "ALL"
+prov_sex$AGE10 <- "ALL"
+
+BE_POP_PROJ_PROV <- bind_rows(prov_age, prov_sex)
+
+## .. RGN
+rgn_age <- dta[[4]]
+rgn_age$AGE <- as.character(rgn_age$AGE)
+rgn_sex <- aggregate(
+  data = rgn_age,
+  POPULATION ~ YEAR + REGION + SEX,
+  FUN = sum
+)
+rgn_sex$AGE <- "ALL"
+rgn_sex$AGE5 <- "ALL"
+rgn_sex$AGE10 <- "ALL"
+
+BE_POP_PROJ_RGN <- bind_rows(rgn_age, rgn_sex)
+
+## .. BEL
+be_age <- dta[[2]]
+be_age$AGE <- as.character(be_age$AGE)
+be_sex <- aggregate(
+  data = be_age,
+  POPULATION ~ YEAR + REGION + SEX,
+  FUN = sum
+)
+be_sex$AGE <- "ALL"
+be_sex$AGE5 <- "ALL"
+be_sex$AGE10 <- "ALL"
+
+BE_POP_PROJ <- bind_rows(be_age, be_sex)
+
+##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## SAVE DATA ####
 ##++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ## check if aggregation was correct (all number should be the same)
@@ -398,5 +565,6 @@ aggregate(rgn, POPULATION ~ YEAR, FUN = sum)
 
 ## save data into package data
 usethis::use_data(BE_POP_MUNTY, BE_POP_ARRD, BE_POP_PROV, BE_POP_RGN,
-                  BE_POP, overwrite = TRUE,
+                  BE_POP, BE_POP_PROJ_ARRD, BE_POP_PROJ_PROV, BE_POP_PROJ_RGN,
+                  BE_POP_PROJ, overwrite = TRUE,
                   compress = "xz", version = 2)
