@@ -52,14 +52,32 @@ betab <- aggregate(
 kableExtra::kable(betab)
 ```
 
+## Population projection datasets
 
+the `bepop` package also contains population projection files on different geographical levels (districts - provinces -  regions - country). The datasets are named as follows:
+
+* *BE_POP_PROJ_ARRD*: districts
+* *BE_POP__PROJ_PROV*: provinces (+ Brussels Capital Region for simplicity)
+* *BE_POP_PROJ_RGN*: regions
+* *BE_POP_PROJ*: country
+
+for more information on the content of each dataset, you can always consult the help-file by `?BE_POP_PROJ`. The population structure of Belgium over the years and its projections are as follows:
+
+```{r, echo = FALSE}
+data("BE_POP_PROJ")
+betab <- subset(BE_POP_PROJ, subset = SEX == "MF" & AGE == "ALL", select = c("YEAR", "POPULATION"))
+betab <- as.data.frame(betab)
+rownames(betab) <- c()
+kableExtra::kable(betab)
+```
 
 ## Data sources
 
 The idea for this package is inspired by the [BelgiumMaps.StatBel package](https://github.com/bnosac/BelgiumMaps.StatBel), developed by Jan Wijffels at [BNOSAC](http://www.bnosac.be/index.php/blog/55-belgiummaps-statbel-r-package-with-administrative-boundaries-of-belgium).
 
-The population files are obtained from the Statbel open data:
+The population files are obtained from the Statbel open data and the open data from the federal plan bureau (FPB) of Belgium:
 
 * **https://statbel.fgov.be/en/themes/population** includes information on the population of Belgium on the 1st of January for each year.
+* **https://www.plan.be/publications/publication-2255-nl-demografische_vooruitzichten_2021_2070_update_sterke_opwaartse_herziening_van_de_bevolkingsgroei_in_2022** includes information on the population projections of Belgium.
 
-To calculate the mid-year population of year `x`, one should average the population of year `x` and year `x+1` 
+To calculate the mid-year population of year `x`, one should average the population of year `x` and year `x+1` .

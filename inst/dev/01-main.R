@@ -442,14 +442,15 @@ for (fxlsx in ls) {
       c("<1", "1-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34",
         "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69",
         "70-74", "75-79", "80-84", "85-89", "90-94", "95+")
-    agei <- c(-Inf, 1, seq(5, 95, 5), Inf)
-    ftmp$xlsx$AGE5 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age)
+    agei <- c(0, 1, seq(5, 95, 5), Inf)
+    ftmp$xlsx$AGE5 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age, include.lowest = TRUE, right = FALSE)
+
     ## .. .. 10-year age band
     age <-
       c("<10", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79",
         "80-89", "90+")
-    agei <- c(-Inf, seq(10, 90, 10), Inf)
-    ftmp$xlsx$AGE10 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age)
+    agei <- c(0, seq(10, 90, 10), Inf)
+    ftmp$xlsx$AGE10 <- cut(ftmp$xlsx$AGE, breaks = agei, labels = age, include.lowest = TRUE, right = FALSE)
     ## merge dataset
     ftmp$dta <- bind_rows(ftmp$dta, ftmp$xlsx)
   }
@@ -563,6 +564,7 @@ aggregate(be, POPULATION ~ YEAR, FUN = sum) # reference
 aggregate(munty, POPULATION ~ YEAR, FUN = sum)
 aggregate(prov, POPULATION ~ YEAR, FUN = sum)
 aggregate(rgn, POPULATION ~ YEAR, FUN = sum)
+subset(BE_POP_PROJ, subset = SEX == "MF" & AGE == "ALL", select = c("YEAR", "POPULATION"))
 
 ## save data into package data
 usethis::use_data(BE_POP_MUNTY, BE_POP_ARRD, BE_POP_PROV, BE_POP_RGN,
