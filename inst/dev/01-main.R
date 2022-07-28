@@ -56,6 +56,7 @@ for (fzip in ls) {
 ## check the dta
 str(dta)
 unique(dta$CD_YEAR)
+sort(unique(dta$CD_AGE))
 unique(dta$CD_SEX)
 unique(dta$TX_RGN_DESCR_NL)
 unique(dta$TX_RGN_DESCR_FR)
@@ -134,14 +135,14 @@ age <-
     "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69",
     "70-74", "75-79", "80-84", "85-89", "90-94", "95+")
 agei <- c(0, 1, seq(5, 95, 5), Inf)
-dta$AGE5 <- cut(dta$AGE, breaks = agei, labels = age)
+dta$AGE5 <- cut(dta$AGE, breaks = agei, labels = age, include.lowest = TRUE, right = FALSE)
 
 ## .. .. 10-year age band
 age <-
   c("<10", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79",
     "80-89", "90+")
 agei <- c(0, seq(10, 90, 10), Inf)
-dta$AGE10 <- cut(dta$AGE, breaks = agei, labels = age)
+dta$AGE10 <- cut(dta$AGE, breaks = agei, labels = age, include.lowest = TRUE, right = FALSE)
 
 ## .. create factors
 dta$AGE <- factor(dta$AGE)
